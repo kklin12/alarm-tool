@@ -53,15 +53,15 @@ os.makedirs(OUTPUT, exist_ok=True)
 os.makedirs(TEMP, exist_ok=True)
 
 # 自己跑可以取消掉注释百度语音密钥
-# API_KEY = "CpsRtHqvreDhoJIF9gCd94ym"
-# SECRET_KEY = "xnSfrxfV72Axg2pCH6SysaXPIX8EXOVu"
+API_KEY = "CpsRtHqvreDhoJIF9gCd94ym"
+SECRET_KEY = "xnSfrxfV72Axg2pCH6SysaXPIX8EXOVu"
 
 ######上传到云端的
-# 百度语音密钥（云平台环境变量读取，本地.env兼容）
-API_KEY = os.getenv("BAIDU_API_KEY", "")
-SECRET_KEY = os.getenv("BAIDU_SECRET_KEY", "")
-if not API_KEY or not SECRET_KEY:
-    raise RuntimeError("未配置百度语音BAIDU_API_KEY / BAIDU_SECRET_KEY环境变量，请在Render后台填写")
+# # 百度语音密钥（云平台环境变量读取，本地.env兼容）
+# API_KEY = os.getenv("BAIDU_API_KEY", "")
+# SECRET_KEY = os.getenv("BAIDU_SECRET_KEY", "")
+# if not API_KEY or not SECRET_KEY:
+#     raise RuntimeError("未配置百度语音BAIDU_API_KEY / BAIDU_SECRET_KEY环境变量，请在Render后台填写")
 #####
 
 
@@ -365,13 +365,8 @@ def extract_audio_features(file_path, filename=None):
 def generate_spectrogram(y, sr, filename, output_path):
 
     ##############################之前的
-    # plt.rcParams['font.sans-serif'] = ["SimHei", "Microsoft YaHei", "DejaVu Sans"]
-#############################################
-    plt.rcParams['font.sans-serif'] = ["DejaVu Sans", "SimHei", "Microsoft YaHei"]
-    plt.rcParams["axes.unicode_minus"] = False
+    plt.rcParams['font.sans-serif'] = ["SimHei", "Microsoft YaHei", "DejaVu Sans"]
 
-    plt.rcParams["axes.unicode_minus"] = False
-##############################################
 
 
     fig, ax = plt.subplots(figsize=(10, 3.5))
