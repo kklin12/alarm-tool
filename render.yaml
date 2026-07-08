@@ -9,3 +9,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
+      # 下面两个密钥不要写死在这里，网页后台手动填，sync:false禁止写入仓库
+      - key: BAIDU_API_KEY
+        sync: false
+      - key: BAIDU_SECRET_KEY
+        sync: false
