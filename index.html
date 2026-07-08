@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>飞机音响告警生成与评估工具</title>
+<style>
+*{box-sizing: border-box;}
+body{font-family: "Microsoft YaHei", SimHei; padding:15px; max-width:1400px; margin:0 auto; background:#f7f9fa;}
+h2,h3{color:#223344;}
+.box{border:1px solid #ccd6e0; padding:16px; margin:12px 0; border-radius:8px; background:#fff; box-shadow:0 1px 3px #e0e5ec;}
+.row{margin:10px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+label{width:160px; font-weight:500;}
+input[type="number"]{width:140px; padding:5px 8px; border:1px solid #b0c4de; border-radius:4px; font-size:14px;}
+input[type="text"]{padding:5px 8px; border:1px solid #b0c4de; border-radius:4px; font-size:14px;}
+input[type="range"]{width:250px; cursor:pointer;}
+.tip{color:#556677; font-size:13px;}
+textarea{width:100%; height:100px; padding:8px; border:1px solid #b0c4de; border-radius:4px; font-size:14px; resize:vertical;}
+button{padding:7px 18px; cursor:pointer; border:none; border-radius:5px; background:#2774d9; color:#fff; font-size:14px;}
+button:hover{background:#1f63bd;}
+.btn-del{background:#d93025; padding:5px 12px; font-size:13px; white-space:nowrap; margin-top:8px;}
+.btn-clear{background:#666666;}
+.btn-merge{background:#009688;}
+.btn-export{background:#2e7d32;}
+.btn-analyze{background:#8e44ad; padding:5px 14px; font-size:13px;}
+.btn-analyze:hover{background:#732d91;}
+.btn-select-all{background:#ff8f00; padding:5px 14px; font-size:13px;}
+.btn-select-all:hover{background:#e6a800;}
+.red{color:#e53935;}
+.green{color:#2e7d32;}
+.blue{color:#1a73e8;}
+#spectroBox img{max-width:100%; border:1px solid #ddd; margin-top:8px;}
+audio{margin:6px 0; width:420px;}
+table{border-collapse: collapse; width:100%; margin:10px 0;}
+table td,table th{border:1px solid #cccccc; padding:6px 10px; font-size:14px;}
+table th{background:#f0f0f0; position:sticky; top:0; z-index:10;}
+table td input, table td select{
+    width:100%;
+    border:none;
+    background:transparent;
+    padding:4px 2px;
+    font-size:14px;
+    font-family:inherit;
+}
+table td input:focus, table td select:focus{
+    outline:2px solid #2774d9;
+    background:#fff;
+    border-radius:3px;
+}
+table td input[type="text"]{width:100%;}
+.table-wrap{max-height:500px; overflow-y:auto; border:1px solid #ddd; border-radius:4px;}
+#uploadFile{padding:5px;}
+.audio-item{
+    border:1px solid #dddddd;
+    padding:14px 18px;
+    border-radius:8px;
+    margin:10px 0;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+}
+.audio-item .audio-header{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+}
+.audio-item .audio-controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+.audio-item .audio-check{
+    margin-right:10px;
+}
+.external-tag{
+    display:inline-block;
+    background:#e8f5e9;
+    color:#2e7d32;
+    padding:1px 8px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:bold;
+    margin-left:8px;
+}
+.internal-tag{
+    display:inline-block;
+    background:#e3f2fd;
+    color:#1565c0;
+    padding:1px 8px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:bold;
+    margin-left:8px;
+}
+.merged-tag{
+    display:inline-block;
+    background:#fff3e0;
+    color:#e65100;
+    padding:1px 8px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:bold;
+    margin-left:8px;
+}
+.two-col {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+.two-col .box {
+    margin:0;
+}
+@media (max-width:768px){
+    .two-col{grid-template-columns:1fr;}
+}
+.pitch-display, .volume-display {
+    font-weight:bold;
+    color:#2774d9;
+    min-width:30px;
+    text-align:center;
+}
+.spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 16px;
+}
+.spec-item {
+    border: 1px solid #e0e5ec;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px #e0e5ec;
+}
+.spec-item h4 {
+    margin-top: 0;
+    color: #333;
+    font-size: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+.spec-item img {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.spec-item .spec-info {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+.spec-item .spec-info span {
+    background: #f5f5f5;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+@media (max-width: 768px) {
+    .spec-grid { grid-template-columns: 1fr; }
+}
+.column-selector {
+    background: #f5f7fa;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    border: 1px solid #e0e5ec;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.column-selector .select-label {
+    font-weight: 600;
+    color: #333;
+    margin-right: 8px;
+    font-size: 14px;
+}
+.column-selector .col-option {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.column-selector .col-option:hover {
+    border-color: #2774d9;
+    background: #f0f4ff;
+}
+.column-selector .col-option input[type="checkbox"] {
+    margin: 0;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+.volume-info {
+    font-size: 13px;
+    color: #888;
+    margin-left: 10px;
+}
+.volume-info .low { color: #2e7d32; }
+.volume-info .mid { color: #f9a825; }
+.volume-info .high { color: #c62828; }
+.pitch-info {
+    font-size: 13px;
+    color: #888;
+    margin-left: 10px;
+}
+.pitch-info .low { color: #2e7d32; }
+.pitch-info .mid { color: #f9a825; }
+.pitch-info .high { color: #c62828; }
+.fixed-tag {
+    display:inline-block;
+    background:#fff3e0;
+    color:#e65100;
+    padding:1px 8px;
+    border-radius:10px;
+    font-size:11px;
+    font-weight:bold;
+    margin-left:4px;
+}
+.title-box {
+    background-color: #2774d9;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+.title-box h2 {
+    color: #fff;
+    margin: 0;
+}
+.upload-progress {
+    font-size: 13px;
+    color: #2774d9;
+}
+</style>
+</head>
+<body>
+<div class="title-box">
+    <h2>✈️ 音响告警生成与评估辅助工具</h2>
+</div>
+
+<!-- 两栏布局 -->
+<div class="two-col">
+    <div class="box">
+        <h3>1. 告警文本与重复配置</h3>
+        <div class="row">
+            <label style="width:100%;">告警文本：</label>
+            <textarea id="txt" placeholder="输入告警文字，逗号/句号自动分句；文字后加~实现尾音拉长，例：注意注意~、警~报响起">注意注意，前方有障碍物~</textarea>
+        </div>
+        <div class="row">
+            <label>告警重复次数：</label>
+            <input type="number" id="repeat_times" value="1" min="1" max="10">
+            <span class="tip">1~10次</span>
+        </div>
+        <div class="row">
+            <label>循环间隔时间：</label>
+            <input type="number" step="0.1" id="repeat_gap" value="0.8" min="0" max="5">
+            <span class="tip">单位：秒(s)</span>
+        </div>
+        <div class="row">
+            <label>音量等级（0-15）：</label>
+            <input type="range" id="volume_slider" min="0" max="15" value="8" step="1" oninput="updateVolumeDisplay()">
+            <span class="volume-display" id="volume_display">8</span>
+            <span class="tip">等级为0时：-29dB；等级为8时：-21dB；等级为15时：-17dB</span>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3>2. 人声音色与语速配置</h3>
+        <div class="row">
+            <label>人声类型：</label>
+            <select id="voice_gender" onchange="fillVoicePreset()" style="padding:5px 8px; border:1px solid #b0c4de; border-radius:4px; font-size:14px;">
+                <option value="0">普通女声</option>
+                <option value="1">普通男声</option>
+                <option value="2">深沉男声</option>
+                <option value="3">甜美女声</option>
+                <option value="4">童声</option>
+            </select>
+            <span class="tip">切换自动加载配套参数</span>
+        </div>
+        <div class="row">
+            <label>每分钟朗读字数：</label>
+            <input type="number" step="5" id="word_per_min" value="240" min="60" max="360">
+            <span class="tip">范围60-360字/分钟</span>
+        </div>
+        <div class="row">
+            <label>分句停顿时长：</label>
+            <input type="number" step="0.1" id="segment_pause" value="0.3" min="0" max="3">
+            <span class="tip">单位：秒(s)</span>
+        </div>
+        <div class="row">
+            <label>音调等级（0-9）：</label>
+            <input type="range" id="pitch_slider" min="0" max="9" value="5" step="1" oninput="updatePitchDisplay()">
+            <span class="pitch-display" id="pitch_display">5</span>
+            <span class="pitch-info">
+                <span class="low">● 低沉</span>
+                <span class="mid">● 正常</span>
+                <span class="high">● 尖锐</span>
+            </span>
+        </div>
+        <div class="row">
+            <span class="tip">普通女声基准：260Hz；普通男声基准：125Hz；深沉男声基准：125Hz；</span>
+            <span class="tip">甜美女声基准：250Hz；童声基准：335Hz。</span>
+        </div>
+        <div style="margin-top:12px;">
+            <button onclick="genAudio()">生成单条告警音频</button>
+            <span id="genTip" style="margin-left:15px;color:#666;"></span>
+        </div>
+    </div>
+</div>
+
+<!-- 3、音频列表与合并 -->
+<div class="box">
+    <h3>3. 音频列表</h3>
+    <div style="margin-bottom:10px; gap:10px; display:flex; align-items:center; flex-wrap:wrap;">
+        <label>静默间隔(0-10s)：</label>
+        <input type="number" step="0.1" id="merge_gap" value="0.5" min="0" max="10">
+        <button class="btn-merge" onclick="mergeSelectedAudio()">合并选中音频</button>
+        <button class="btn-clear" onclick="clearAllAudio()">清空全部列表</button>
+        <span id="mergeTip" style="color:#666;font-size:13px;"></span>
+    </div>
+    <div id="audioListBox"></div>
+</div>
+
+<!-- 4、外部音频上传分析 + Excel导出 -->
+<div class="box">
+    <h3>4. 音频频谱分析与评估导出</h3>
+    <div style="margin-bottom:10px; color:#666; font-size:13px;">
+        💡 上传的音频会保存到服务器，可永久播放并支持合并
+    </div>
+    <div class="row">
+        <input type="file" id="uploadFile" multiple accept=".wav,.mp3,.m4a,.aac,.flac">
+        <button onclick="uploadAndAnalyzeAudio()">📤 上传并分析</button>
+        <button class="btn-clear" onclick="clearAnalysis()">清空分析数据</button>
+        <button class="btn-export" onclick="exportExcel()">📊 导出评估表</button>
+        <span id="exportTip" style="color:#666;font-size:13px;"></span>
+    </div>
+    <div id="uploadProgress" class="upload-progress"></div>
+
+    <!-- 列选择器 -->
+    <div id="columnSelector" style="display:none;" class="column-selector">
+        <span class="select-label">📋 选择导出的列：</span>
+        <button class="btn-select-all" onclick="selectAllColumns()" style="font-size:12px; padding:3px 12px;">全选</button>
+        <button class="btn-clear" onclick="deselectAllColumns()" style="font-size:12px; padding:3px 12px;">全不选</button>
+    </div>
+
+    <div id="analysisRes"></div>
+    <div id="spectroBox"></div>
+</div>
+
+<script>
+// ==================== 全局变量 ====================
+window.lastAnalysisData = [];
+window.generatedAudioList = [];
+window.uploadingFiles = false;
+
+// ========== 可勾选的列（不包含评估列） ==========
+const COLUMN_DEFS = [
+    { key: 'alert_text', label: '告警文本', defaultChecked: true },
+    { key: 'voice_type', label: '人声类型', defaultChecked: true },
+    { key: 'total_duration', label: '总时长(s)', defaultChecked: true },
+    { key: 'speech_duration', label: '语音时长(s)', defaultChecked: true },
+    { key: 'alert_effective_duration', label: '告警有效时长(s)', defaultChecked: true },
+    { key: 'speech_ratio', label: '语音段比例(%)', defaultChecked: true },
+    { key: 'silence_ratio', label: '静音段比例(%)', defaultChecked: true },
+    { key: 'sample_count', label: '采样数', defaultChecked: true },
+    { key: 'sample_rate', label: '采样频率(Hz)', defaultChecked: true },
+    { key: 'repeat_cnt', label: '重复次数', defaultChecked: true },
+    { key: 'repeat_gap', label: '间隔(s)', defaultChecked: true },
+    { key: 'loudness_db', label: '实测响度(dB)', defaultChecked: true },
+    { key: 'spectral_centroid', label: '频谱中心(Hz)', defaultChecked: true },
+    { key: 'spectral_bandwidth', label: '频谱带宽(Hz)', defaultChecked: true },
+    { key: 'avg_pitch', label: '平均音调(Hz)', defaultChecked: true }
+];
+
+const VOICE_NAMES = ["普通男声", "普通女声", "深沉男声", "甜美女声", "童声"];
+const VOICE_PRESET = {
+    0: { word_per_min: 240, pitch: 5, volume: 8 },
+    1: { word_per_min: 216, pitch: 5, volume: 8 },
+    2: { word_per_min: 204, pitch: 4, volume: 8 },
+    3: { word_per_min: 228, pitch: 6, volume: 7 },
+    4: { word_per_min: 216, pitch: 6, volume: 8 }
+};
+
+// ==================== 工具函数 ====================
+function getSelectedColumns() {
+    const checkboxes = document.querySelectorAll('.col-checkbox');
+    const selected = [];
+    checkboxes.forEach(cb => { if (cb.checked) selected.push(cb.value); });
+    return selected;
+}
+
+function selectAllColumns() {
+    document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = true);
+}
+
+function deselectAllColumns() {
+    document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = false);
+}
+
+function renderColumnSelector() {
+    const container = document.getElementById('columnSelector');
+    container.style.display = 'flex';
+
+    const toRemove = [];
+    for (let child of container.children) {
+        if (!child.classList.contains('select-label') &&
+            child.tagName !== 'BUTTON') {
+            toRemove.push(child);
+        }
+    }
+    toRemove.forEach(el => el.remove());
+
+    COLUMN_DEFS.forEach(def => {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'col-option';
+        wrapper.innerHTML = `
+            <input type="checkbox" class="col-checkbox" value="${def.key}" ${def.defaultChecked ? 'checked' : ''}>
+            ${def.label}
+        `;
+        container.appendChild(wrapper);
+    });
+}
+
+function getSelectedAudioFiles() {
+    const checkboxes = document.querySelectorAll('.audio-check:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function fillVoicePreset() {
+    const vCode = Number(document.getElementById('voice_gender').value);
+    const preset = VOICE_PRESET[vCode];
+    if (preset) {
+        document.getElementById('word_per_min').value = preset.word_per_min;
+        document.getElementById('volume_slider').value = preset.volume;
+        document.getElementById('pitch_slider').value = preset.pitch;
+        updatePitchDisplay();
+        updateVolumeDisplay();
+    }
+}
+
+function updatePitchDisplay() {
+    const val = parseInt(document.getElementById('pitch_slider').value);
+    document.getElementById('pitch_display').textContent = val;
+}
+
+function updateVolumeDisplay() {
+    const val = parseInt(document.getElementById('volume_slider').value);
+    document.getElementById('volume_display').textContent = val;
+}
+
+// ==================== 音频列表渲染 ====================
+function renderAudioList() {
+    const box = document.getElementById('audioListBox');
+
+    if (window.generatedAudioList.length === 0) {
+        box.innerHTML = "<span style='color:#666; font-size:16px;'>暂无音频文件，请生成或导入</span>";
+        return;
+    }
+
+    let html = `<h4 style="margin:10px 0;color:#1565c0;">📌 音频列表（共 ${window.generatedAudioList.length} 个）</h4>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:16px;">`;
+
+    window.generatedAudioList.forEach((item, idx) => {
+        let tag;
+        if (item.is_merged) {
+            tag = '<span class="merged-tag">合并</span>';
+        } else if (item.is_external) {
+            tag = '<span class="external-tag">📁 外部导入</span>';
+        } else {
+            tag = '<span class="internal-tag">生成</span>';
+        }
+        const pit = item.cfg && item.cfg.pit_value !== undefined ? item.cfg.pit_value : '';
+        const vol = item.cfg && item.cfg.volume_level !== undefined ? item.cfg.volume_level : '';
+        const displayName = item.display_name || item.name;
+
+        html += `
+            <div class="audio-item" style="margin:0;">
+                <div class="audio-header">
+                    <div>
+                        <p style="margin:4px 0; font-weight:500;">
+                            <input type="checkbox" class="audio-check" value="${item.name}" style="margin-right:8px;">
+                            音频${idx+1}：${displayName} ${tag}
+                        </p>
+                        <p style="margin:2px 0; font-size:13px; color:#666;">📝 ${item.alert_text || '（无文本）'}</p>
+                        ${pit !== '' ? `<p style="margin:2px 0; font-size:12px; color:#2774d9;">🎵 音调等级: ${pit} (0=最低沉, 9=最尖锐)</p>` : ''}
+                        ${vol !== '' ? `<p style="margin:2px 0; font-size:12px; color:#d97706;">🔊 音量等级: ${vol} (0=最小, 15=最大)</p>` : ''}
+                        ${item.is_external ? `<p style="margin:2px 0; font-size:12px; color:#2e7d32;">📁 原始文件: ${item.original_name || item.name}</p>` : ''}
+                    </div>
+                </div>
+                <div><audio controls src="${item.url}"></audio></div>
+                <div style="margin-top:8px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button class="btn-analyze" onclick="analyzeSingleAudio('${item.name}')">🔍 频谱分析</button>
+                    <button class="btn-del" onclick="delAudioItem('${item.name}')">✖ 删除</button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    box.innerHTML = html;
+}
+
+// ==================== 音频操作 ====================
+async function genAudio() {
+    const tipBox = document.getElementById('genTip');
+    const specBox = document.getElementById('spectroBox');
+    specBox.innerHTML = '';
+    tipBox.innerHTML = '⏳ 生成中...';
+
+    const data = {
+        text: document.getElementById('txt').value,
+        voice_gender: Number(document.getElementById('voice_gender').value),
+        word_per_min: Number(document.getElementById('word_per_min').value),
+        pit_value: Number(document.getElementById('pitch_slider').value),
+        segment_pause: Number(document.getElementById('segment_pause').value),
+        volume_level: Number(document.getElementById('volume_slider').value),
+        repeat_times: Number(document.getElementById('repeat_times').value),
+        repeat_gap: Number(document.getElementById('repeat_gap').value)
+    };
+
+    try {
+        const res = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const ret = await res.json();
+        if (ret.error) {
+            tipBox.innerHTML = `<span class='red'>生成失败：${ret.error}</span>`;
+            return;
+        }
+        window.generatedAudioList.push({
+            name: ret.file_name,
+            url: ret.file_url,
+            alert_text: document.getElementById('txt').value,
+            cfg: ret.cfg,
+            is_external: false,
+            is_merged: false,
+            display_name: ret.file_name
+        });
+        renderAudioList();
+        tipBox.innerHTML = `<span class='green'>✅ 生成成功！</span>`;
+    } catch (err) {
+        tipBox.innerHTML = `<span class='red'>请求异常：${err}</span>`;
+    }
+}
+
+async function analyzeSingleAudio(filename) {
+    const tipBox = document.getElementById('genTip');
+    const specBox = document.getElementById('spectroBox');
+    specBox.innerHTML = '';
+    tipBox.innerHTML = `⏳ 正在分析 ${filename}...`;
+
+    try {
+        const res = await fetch('/api/analyze_single', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        });
+        const ret = await res.json();
+        if (ret.error) {
+            tipBox.innerHTML = `<span class='red'>分析失败：${ret.error}</span>`;
+            return;
+        }
+
+        const enhancedData = ret.analysis.map(item => ({
+            ...item,
+            voice_type: item.voice_type || '',
+            repeat_cnt: item.repeat_cnt || item.auto_repeat_cnt || 0,
+            repeat_gap: item.repeat_gap || item.auto_repeat_gap_sec || 0
+        }));
+
+        if (window.lastAnalysisData.length === 0) {
+            window.lastAnalysisData = enhancedData;
+        } else {
+            enhancedData.forEach(newItem => {
+                const idx = window.lastAnalysisData.findIndex(d => d.file === newItem.file);
+                if (idx >= 0) window.lastAnalysisData[idx] = { ...window.lastAnalysisData[idx], ...newItem };
+                else window.lastAnalysisData.push(newItem);
+            });
+        }
+
+        renderAnalysisTable(window.lastAnalysisData);
+
+        if (ret.analysis[0]?.spectrogram) {
+            const item = ret.analysis[0];
+            specBox.innerHTML = `
+                <h4 style="margin-bottom:15px;">📊 频谱分析结果</h4>
+                <div class="spec-grid">
+                    <div class="spec-item">
+                        <h4>📊 频谱图：${filename}</h4>
+                        <img src="${item.spectrogram}" alt="梅尔频谱图">
+                        <div class="spec-info">
+                            <span>⏱ 时长: ${item.total_duration}s</span>
+                            <span>🔊 实测响度: ${item.loudness_db}dB</span>
+                            <span>📡 频谱中心: ${item.spectral_centroid}Hz</span>
+                            <span>🎵 平均音调: ${item.avg_pitch || 0}Hz</span>
+                            <span>⏱ 有效时长: ${item.alert_effective_duration || 0}s</span>
+                            <span>🎤 语音段: ${item.speech_ratio || 0}%</span>
+                            <span>🔇 静音段: ${item.silence_ratio || 0}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        tipBox.innerHTML = `<span class='green'>✅ 分析完成！</span>`;
+    } catch (err) {
+        tipBox.innerHTML = `<span class='red'>分析异常：${err}</span>`;
+    }
+}
+
+async function mergeSelectedAudio() {
+    const tipBox = document.getElementById('mergeTip');
+    const fileList = getSelectedAudioFiles();
+
+    if (fileList.length < 2) {
+        tipBox.innerHTML = "<span class='red'>请至少选择2条音频</span>";
+        return;
+    }
+
+    const mergeGap = parseFloat(document.getElementById('merge_gap').value);
+    if (isNaN(mergeGap) || mergeGap < 0 || mergeGap > 10) {
+        tipBox.innerHTML = "<span class='red'>合并静默间隔范围0~10秒</span>";
+        return;
+    }
+
+    tipBox.innerHTML = '⏳ 合并中...';
+    try {
+        const res = await fetch('/api/merge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_list: fileList, merge_gap: mergeGap })
+        });
+        const ret = await res.json();
+        if (ret.error) {
+            tipBox.innerHTML = `<span class='red'>合并失败：${ret.error}</span>`;
+            return;
+        }
+        window.generatedAudioList.push({
+            name: ret.merge_file,
+            url: ret.merge_url,
+            alert_text: `合并音频 (${fileList.join(', ')})`,
+            cfg: {},
+            is_external: false,
+            is_merged: true,
+            display_name: ret.merge_file
+        });
+        renderAudioList();
+        tipBox.innerHTML = `
+            <p class="green">✅ 合并完成！</p>
+            <audio controls src="${ret.merge_url}"></audio>
+            <p><a href="${ret.merge_url}" download>点击下载</a></p>
+        `;
+    } catch (err) {
+        tipBox.innerHTML = `<span class='red'>合并异常：${err}</span>`;
+    }
+}
+
+function delAudioItem(filename) {
+    window.lastAnalysisData = window.lastAnalysisData.filter(d => d.file !== filename);
+    renderAnalysisTable(window.lastAnalysisData);
+    window.generatedAudioList = window.generatedAudioList.filter(item => item.name !== filename);
+    renderAudioList();
+}
+
+function clearAllAudio() {
+    window.generatedAudioList = [];
+    window.lastAnalysisData = [];
+    document.getElementById('analysisRes').innerHTML = '';
+    document.getElementById('spectroBox').innerHTML = '';
+    document.getElementById('exportTip').innerHTML = '';
+    document.getElementById('columnSelector').style.display = 'none';
+    renderAudioList();
+}
+
+function clearAnalysis() {
+    window.lastAnalysisData = [];
+    document.getElementById('analysisRes').innerHTML = '';
+    document.getElementById('spectroBox').innerHTML = '';
+    document.getElementById('columnSelector').style.display = 'none';
+}
+
+// ==================== 上传并分析外部音频 ====================
+async function uploadAndAnalyzeAudio() {
+    const fileInput = document.getElementById('uploadFile');
+    const files = fileInput.files;
+    const resBox = document.getElementById('analysisRes');
+    const specBox = document.getElementById('spectroBox');
+    const tipBox = document.getElementById('exportTip');
+    const progressBox = document.getElementById('uploadProgress');
+
+    if (files.length === 0) {
+        resBox.innerHTML = "<span class='red'>请选择音频文件</span>";
+        return;
+    }
+
+    if (window.uploadingFiles) {
+        resBox.innerHTML = "<span class='red'>正在上传中，请稍候...</span>";
+        return;
+    }
+
+    window.uploadingFiles = true;
+    progressBox.innerHTML = `⏳ 正在上传 ${files.length} 个文件到服务器...`;
+    resBox.innerHTML = '';
+
+    try {
+        // 第一步：上传文件到服务器
+        const uploadFormData = new FormData();
+        for (let f of files) {
+            uploadFormData.append('files', f);
+        }
+
+        const uploadRes = await fetch('/api/upload_external', {
+            method: 'POST',
+            body: uploadFormData
+        });
+        const uploadRet = await uploadRes.json();
+
+        if (uploadRet.error) {
+            resBox.innerHTML = `<span class='red'>上传失败：${uploadRet.error}</span>`;
+            window.uploadingFiles = false;
+            progressBox.innerHTML = '';
+            return;
+        }
+
+        // 将上传成功的文件添加到音频列表
+        uploadRet.files.forEach(fileInfo => {
+            const exists = window.generatedAudioList.some(item => item.name === fileInfo.saved_name);
+            if (!exists) {
+                window.generatedAudioList.push({
+                    name: fileInfo.saved_name,
+                    url: fileInfo.url,
+                    alert_text: fileInfo.original_name.replace(/\.[^.]+$/, ''),
+                    cfg: {},
+                    is_external: true,
+                    is_merged: false,
+                    original_name: fileInfo.original_name,
+                    display_name: fileInfo.original_name
+                });
+            }
+        });
+
+        renderAudioList();
+        progressBox.innerHTML = `✅ 上传完成，正在分析...`;
+
+        // 第二步：分析音频
+        const analyzeFormData = new FormData();
+        for (let f of files) {
+            analyzeFormData.append('files', f);
+        }
+
+        const analyzeRes = await fetch('/api/analyze', {
+            method: 'POST',
+            body: analyzeFormData
+        });
+        const analyzeRet = await analyzeRes.json();
+
+        if (analyzeRet.error) {
+            resBox.innerHTML = `<span class='red'>分析失败：${analyzeRet.error}</span>`;
+            window.uploadingFiles = false;
+            progressBox.innerHTML = '';
+            return;
+        }
+
+        console.log('分析返回数据:', analyzeRet);
+
+        if (!analyzeRet.analysis || analyzeRet.analysis.length === 0) {
+            resBox.innerHTML = `<span class='red'>没有分析结果</span>`;
+            window.uploadingFiles = false;
+            progressBox.innerHTML = '';
+            return;
+        }
+
+        // 标准化数据字段
+        const enhancedData = analyzeRet.analysis.map(item => ({
+            file: item.file || '未知文件',
+            alert_text: item.alert_text || '',
+            voice_type: item.voice_type || '',
+            total_duration: item.total_duration || 0,
+            speech_duration: item.speech_duration || 0,
+            alert_effective_duration: item.alert_effective_duration || 0,
+            speech_ratio: item.speech_ratio || 0,
+            silence_ratio: item.silence_ratio || 0,
+            sample_count: item.sample_count || 0,
+            sample_rate: item.sample_rate || 0,
+            repeat_cnt: item.auto_repeat_cnt || 0,
+            repeat_gap: item.auto_repeat_gap_sec || 0,
+            loudness_db: item.loudness_db || 0,
+            spectral_centroid: item.spectral_centroid || 0,
+            spectral_bandwidth: item.spectral_bandwidth || 0,
+            avg_pitch: item.avg_pitch || 0,
+            spectrogram: item.spectrogram || '',
+            a1: '',
+            a2: '',
+            p11: '',
+            p12: '',
+            p13: '',
+            p14: '',
+            p21: '',
+            p22: '',
+            p3: '',
+            suggestion: '',
+            remark: ''
+        }));
+
+        console.log('增强后的数据:', enhancedData);
+
+        window.lastAnalysisData = enhancedData;
+
+        // 渲染分析表格
+        renderAnalysisTable(enhancedData);
+
+        // 显示频谱图
+        let specHtml = '<h4 style="margin-bottom:15px;">📊 频谱分析结果</h4><div class="spec-grid">';
+        let hasSpectrogram = false;
+        analyzeRet.analysis.forEach(item => {
+            if (item.spectrogram) {
+                hasSpectrogram = true;
+                specHtml += `
+                    <div class="spec-item">
+                        <h4>📊 ${item.file}</h4>
+                        <p style="font-size:13px;color:#2774d9;">📝 告警文本：${item.alert_text || '（未识别）'}</p>
+                        <img src="${item.spectrogram}" alt="频谱图">
+                        <div class="spec-info">
+                            <span>⏱ 时长: ${item.total_duration}s</span>
+                            <span>🔊 实测响度: ${item.loudness_db}dB</span>
+                            <span>📡 频谱中心: ${item.spectral_centroid}Hz</span>
+                            <span>🎵 平均音调: ${item.avg_pitch || 0}Hz</span>
+                            <span>⏱ 有效时长: ${item.alert_effective_duration || 0}s</span>
+                            <span>🎤 语音段: ${item.speech_ratio || 0}%</span>
+                            <span>🔇 静音段: ${item.silence_ratio || 0}%</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        specHtml += '</div>';
+        if (hasSpectrogram) {
+            specBox.innerHTML = specHtml;
+        } else {
+            specBox.innerHTML = '<p style="color:#666;">频谱图生成失败</p>';
+        }
+
+        resBox.innerHTML += `<div style="margin-top:10px;"><span class='green'>✅ 分析完成！共 ${analyzeRet.analysis.length} 个文件</span></div>`;
+        progressBox.innerHTML = `✅ 上传并分析完成！`;
+
+    } catch (err) {
+        console.error('上传分析异常:', err);
+        resBox.innerHTML = `<span class='red'>操作异常：${err.message}</span>`;
+        progressBox.innerHTML = `<span class='red'>❌ 操作失败</span>`;
+    } finally {
+        window.uploadingFiles = false;
+        fileInput.value = '';
+    }
+}
+
+// ==================== 分析表格 ====================
+function renderAnalysisTable(data) {
+    const resBox = document.getElementById('analysisRes');
+
+    console.log('renderAnalysisTable 被调用，数据:', data);
+    console.log('数据长度:', data ? data.length : 0);
+
+    if (!data || data.length === 0) {
+        resBox.innerHTML = "<span style='color:#666;'>暂无分析数据</span>";
+        document.getElementById('columnSelector').style.display = 'none';
+        return;
+    }
+
+    // 显示列选择器
+    const columnSelector = document.getElementById('columnSelector');
+    if (columnSelector.style.display !== 'flex') {
+        renderColumnSelector();
+    }
+
+    // 构建表格HTML
+    let html = `<div class="table-wrap"><table id="analysisTable"><thead><tr>
+        <th style="min-width:180px;">告警编号</th>
+        <th style="min-width:150px;">告警文本</th>
+        <th style="min-width:110px;">人声类型</th>
+        <th style="min-width:80px;">总时长(s)</th>
+        <th style="min-width:80px;">语音时长(s)</th>
+        <th style="min-width:80px;">告警有效时长(s)</th>
+        <th style="min-width:80px;">语音段比例(%)</th>
+        <th style="min-width:80px;">静音段比例(%)</th>
+        <th style="min-width:80px;">采样数</th>
+        <th style="min-width:80px;">采样频率(Hz)</th>
+        <th style="min-width:80px;">重复次数</th>
+        <th style="min-width:80px;">间隔(s)</th>
+        <th style="min-width:80px;">实测响度(dB)</th>
+        <th style="min-width:80px;">频谱中心(Hz)</th>
+        <th style="min-width:80px;">频谱带宽(Hz)</th>
+        <th style="min-width:80px;">平均音调(Hz)</th>
+    </tr></thead><tbody>`;
+
+    data.forEach((item) => {
+        let voiceOptions = '';
+        VOICE_NAMES.forEach((name) => {
+            const selected = (name === item.voice_type) ? 'selected' : '';
+            voiceOptions += `<option value="${name}" ${selected}>${name}</option>`;
+        });
+
+        const getVal = (val, defaultVal = '') => {
+            if (val === undefined || val === null) return defaultVal;
+            return val;
+        };
+
+        html += `<tr>
+            <td><input type="text" value="${getVal(item.file)}"></td>
+            <td><input type="text" value="${getVal(item.alert_text)}" placeholder="从文件名提取"></td>
+            <td><select>${voiceOptions}</select></td>
+            <td><input type="number" step="0.01" value="${getVal(item.total_duration, 0)}"></td>
+            <td><input type="number" step="0.01" value="${getVal(item.speech_duration, 0)}"></td>
+            <td><input type="number" step="0.01" value="${getVal(item.alert_effective_duration, 0)}"></td>
+            <td><input type="number" step="0.01" value="${getVal(item.speech_ratio, 0)}"></td>
+            <td><input type="number" step="0.01" value="${getVal(item.silence_ratio, 0)}"></td>
+            <td><input type="number" step="1" value="${getVal(item.sample_count, 0)}"></td>
+            <td><input type="number" step="1" value="${getVal(item.sample_rate, 0)}"></td>
+            <td><input type="number" step="1" value="${getVal(item.repeat_cnt, 0)}"></td>
+            <td><input type="number" step="0.1" value="${getVal(item.repeat_gap, 0)}"></td>
+            <td><input type="number" step="0.1" value="${getVal(item.loudness_db, 0)}"></td>
+            <td><input type="number" step="0.1" value="${getVal(item.spectral_centroid, 0)}"></td>
+            <td><input type="number" step="0.1" value="${getVal(item.spectral_bandwidth, 0)}"></td>
+            <td><input type="number" step="0.1" value="${getVal(item.avg_pitch, 0)}"></td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+
+    resBox.innerHTML = html;
+    console.log('表格HTML已设置，长度:', html.length);
+}
+
+function getTableData() {
+    const rows = document.querySelectorAll('#analysisTable tbody tr');
+    const data = [];
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input, select');
+        if (inputs.length >= 16) {
+            const rowData = {
+                file: inputs[0]?.value || '',
+                alert_text: inputs[1]?.value || '',
+                voice_type: inputs[2]?.value || '',
+                total_duration: parseFloat(inputs[3]?.value) || 0,
+                speech_duration: parseFloat(inputs[4]?.value) || 0,
+                alert_effective_duration: parseFloat(inputs[5]?.value) || 0,
+                speech_ratio: parseFloat(inputs[6]?.value) || 0,
+                silence_ratio: parseFloat(inputs[7]?.value) || 0,
+                sample_count: parseInt(inputs[8]?.value) || 0,
+                sample_rate: parseInt(inputs[9]?.value) || 0,
+                repeat_cnt: parseInt(inputs[10]?.value) || 0,
+                repeat_gap: parseFloat(inputs[11]?.value) || 0,
+                loudness_db: parseFloat(inputs[12]?.value) || 0,
+                spectral_centroid: parseFloat(inputs[13]?.value) || 0,
+                spectral_bandwidth: parseFloat(inputs[14]?.value) || 0,
+                avg_pitch: parseFloat(inputs[15]?.value) || 0,
+                a1: '',
+                a2: '',
+                p11: '',
+                p12: '',
+                p13: '',
+                p14: '',
+                p21: '',
+                p22: '',
+                p3: '',
+                suggestion: '',
+                remark: ''
+            };
+            data.push(rowData);
+        }
+    });
+    return data;
+}
+
+// ==================== 导出Excel ====================
+async function exportExcel() {
+    const tipBox = document.getElementById('exportTip');
+
+    const tableData = getTableData();
+
+    if (!tableData || tableData.length === 0) {
+        tipBox.innerHTML = "<span class='red'>❌ 请先上传音频分析</span>";
+        return;
+    }
+
+    const selectedCols = getSelectedColumns();
+    if (selectedCols.length === 0) {
+        tipBox.innerHTML = "<span class='red'>❌ 请至少选择一列导出</span>";
+        return;
+    }
+
+    tipBox.innerHTML = '⏳ 生成中...';
+
+    try {
+        const response = await fetch('/api/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                data: tableData,
+                selected_columns: selectedCols
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '导出失败');
+        }
+
+        const blob = await response.blob();
+        const aTag = document.createElement('a');
+        aTag.href = URL.createObjectURL(blob);
+        aTag.download = '机组音响飞行员评估表.xlsx';
+        document.body.appendChild(aTag);
+        aTag.click();
+        document.body.removeChild(aTag);
+        setTimeout(() => URL.revokeObjectURL(aTag.href), 1000);
+
+        tipBox.innerHTML = "<span class='green'>✅ 导出完成！</span>";
+    } catch (err) {
+        tipBox.innerHTML = `<span class='red'>❌ 导出失败：${err.message}</span>`;
+    }
+}
+
+// ==================== 初始化 ====================
+function initPage() {
+    renderAudioList();
+    fillVoicePreset();
+    updatePitchDisplay();
+    updateVolumeDisplay();
+}
+
+initPage();
+</script>
+</body>
+</html>
